@@ -1,3 +1,5 @@
+import { tokens } from './helpers'
+
 const { assert } = require('chai');
 
 const Token = artifacts.require('./Token');
@@ -6,12 +8,12 @@ require('chai')
   .use(require('chai-as-promised'))
   .should()
 
-contract ('Token', (accounts) => {
+contract ('Token', ([deployer, receiver]) => {
     let token;
     const name = 'Gv Token';
     const symbol = 'GV';
     const decimals = 18;
-    const totalsupply = 1000000 * (10 ** decimals);
+    const totalsupply = tokens(1000000).toString();
 
     beforeEach(async() => {
         token = await Token.new();
@@ -36,6 +38,29 @@ contract ('Token', (accounts) => {
         it('tracks the total supply', async() => {
             const result = await token.totalsupply();
             assert.equal(result, totalsupply); 
+        })
+
+        it('assignes the total supply to the deployer', async() => {
+            const result = await token.balanceOf(deployer);
+            assert.equal(result, totalsupply); 
+        })
+
+    })
+
+    describe('sending tokens', () => {
+        let result;
+        let amount;
+
+        beforeEach(async () => {
+            amount = tokens(100);
+            result = await token.transfer(receiver, amount, { from : deployer });
+        })
+
+        it('transfers token balances', async() => {
+            let balance = await token.balanceOf(deployer);
+            assert.equal(balance.toString(), tokens(999900).toString());
+            balance = await token.balanceOf(receiver);
+            assert.equal(balance.toString(), tokens(100).toString());
         })
     })
 });
